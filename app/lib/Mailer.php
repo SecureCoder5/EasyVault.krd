@@ -10,23 +10,12 @@ function sendMail(string $to, string $subject, string $body): void
 
     try {
         $mail->isSMTP();
-
-        // Gmail SMTPS (THIS IS THE KEY FIX)
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = getenv('MAIL_HOST');
         $mail->SMTPAuth   = true;
         $mail->Username   = getenv('MAIL_USER');
         $mail->Password   = getenv('MAIL_PASS');
-        $mail->Port       = 465;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-
-        // Required on Railway to avoid TLS handshake issues
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer'       => false,
-                'verify_peer_name'  => false,
-                'allow_self_signed' => true,
-            ]
-        ];
+        $mail->Port       = (int) getenv('MAIL_PORT');
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 
         $mail->setFrom(
             getenv('MAIL_FROM'),
@@ -39,12 +28,10 @@ function sendMail(string $to, string $subject, string $body): void
         $mail->Subject = $subject;
         $mail->Body    = $body;
 
-        if (!$mail->send()) {
-            throw new RuntimeException($mail->ErrorInfo);
-        }
-
+        $mail->send();
     } catch (Exception $e) {
-        error_log('MAIL ERROR: ' . $e->getMessage());
+        error_log('MAIL ERROR: ' . $mail->ErrorInfo);
         throw new RuntimeException('Email failed');
     }
 }
+s
