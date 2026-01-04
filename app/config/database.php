@@ -9,32 +9,28 @@ function getDB(): PDO
         return $pdo;
     }
 
-    $host = $_ENV['DB_HOST'] ?? '';
-    $db   = $_ENV['DB_NAME'] ?? '';
-    $user = $_ENV['DB_USER'] ?? '';
-    $pass = $_ENV['DB_PASS'] ?? '';
+    $host = getenv('DB_HOST');
+    $db   = getenv('DB_NAME');
+    $user = getenv('DB_USER');
+    $pass = getenv('DB_PASS');
+    $port = getenv('DB_PORT') ?: '3306';
 
-    if (!$host || !$db || !$user) {
+    if (!$host || !$db || !$user || !$pass) {
         throw new RuntimeException('Database configuration missing');
     }
 
-    $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
+    $dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
 
-    try {
-        $pdo = new PDO(
-            $dsn,
-            $user,
-            $pass,
-            [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]
-        );
-    } catch (PDOException $e) {
-        // This part ensures error messages are not exposed to users
-        throw new RuntimeException('Database connection failed');
-    }
+    $pdo = new PDO(
+        $dsn,
+        $user,
+        $pass,
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]
+    );
 
     return $pdo;
 }
