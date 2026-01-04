@@ -109,6 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </form>
 
+            <form method="POST" action="/resend_verification.php" style="margin-top:15px;">
+    <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
+    <button type="submit">Resend verification code</button>
+</form>
+
+
             <?php endif; ?>
 
         </div>
