@@ -21,23 +21,24 @@ WORKDIR /var/www/app
 # -----------------------------
 # Copy application + vendor
 # -----------------------------
-COPY ./app/ ./app/
-COPY ./vendor/ ./vendor/
-COPY ./composer.json ./composer.json
-COPY ./composer.lock ./composer.lock
+COPY ./app ./app
+COPY ./vendor ./vendor
+COPY composer.json composer.lock ./
 
 # -----------------------------
-# Apache Document Root
+# Apache Document Root (CRITICAL FIX)
 # -----------------------------
 ENV APACHE_DOCUMENT_ROOT=/var/www/app/app/public
 
-RUN sed -ri 's!/var/www/html!/var/www/app/app/public!g' /etc/apache2/sites-available/*.conf \
- && sed -ri 's!/var/www/!/var/www/app/app/public!g' /etc/apache2/apache2.conf \
- && sed -ri 's!/var/www/html!/var/www/app/app/public!g' /etc/apache2/conf-available/*.conf
+RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+ && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # -----------------------------
 # Permissions
 # -----------------------------
 RUN chown -R www-data:www-data /var/www/app
 
+# -----------------------------
+# Final working directory
+# -----------------------------
 WORKDIR /var/www/app/app/public
