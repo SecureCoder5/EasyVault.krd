@@ -32,7 +32,7 @@ jobs:
         run: composer audit
 
       - name: Build Docker image
-        run: docker build -t easyvault-krd:latest .
+        run: docker build -t easyvault-krd:latest -f docker/php/Dockerfile .
 
       - name: Install Trivy
         run: |
