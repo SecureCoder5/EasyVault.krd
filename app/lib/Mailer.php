@@ -34,4 +34,4 @@ function sendMail(string $to, string $subject, string $body): void
         throw new RuntimeException('Email failed');
     }
 }
-s
+
