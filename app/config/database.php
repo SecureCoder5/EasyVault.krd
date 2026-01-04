@@ -9,16 +9,18 @@ function getDB(): PDO
         return $pdo;
     }
 
-    $host = $_ENV['DB_HOST'] ?? '';
-    $db   = $_ENV['DB_NAME'] ?? '';
-    $user = $_ENV['DB_USER'] ?? '';
-    $pass = $_ENV['DB_PASS'] ?? '';
+    // Railway-safe environment variable access
+    $host = getenv('DB_HOST') ?: '';
+    $port = getenv('DB_PORT') ?: '3306';
+    $db   = getenv('DB_NAME') ?: '';
+    $user = getenv('DB_USER') ?: '';
+    $pass = getenv('DB_PASS') ?: '';
 
     if (!$host || !$db || !$user) {
         throw new RuntimeException('Database configuration missing');
     }
 
-    $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
+    $dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
 
     try {
         $pdo = new PDO(
@@ -32,7 +34,8 @@ function getDB(): PDO
             ]
         );
     } catch (PDOException $e) {
-        // This part ensures error messages are not exposed to users
+        // Log internally, do not expose details
+        error_log('DB connection error: ' . $e->getMessage());
         throw new RuntimeException('Database connection failed');
     }
 
