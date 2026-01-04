@@ -1,0 +1,8 @@
+{
+    "name": "securecoder/easyvault",
+    "description": "EasyVault.krd DevSecOps Password Vault",
+    "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    }
+}

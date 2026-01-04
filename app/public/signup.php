@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
-session_start();
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../security/crypto.php';
+require_once __DIR__ . '/../security/token.php';
+require_once __DIR__ . '/../lib/Mailer.php';
 
 $error = '';
 $success = '';
@@ -14,52 +15,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // ----------------------------
-    // Validation
-    // ----------------------------
-    if ($email === '' || $username === '' || $password === '') {
-        $error = 'All fields are required.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email address.';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters.';
+    if (!$email || !$username || !$password) {
+        $error = 'All fields are required';
     } else {
-        try {
-            $pdo = getDB();
+        $db = getDB();
 
-            // Check for duplicates
-            $stmt = $pdo->prepare(
-                'SELECT id FROM users WHERE email = :email OR username = :username'
+        $stmt = $db->prepare(
+            'SELECT id FROM users WHERE email = :email OR username = :username'
+        );
+        $stmt->execute([
+            'email' => $email,
+            'username' => $username
+        ]);
+
+        if ($stmt->fetch()) {
+            $error = 'Account already exists';
+        } else {
+            $passwordHash = hashPassword($password);
+
+            $stmt = $db->prepare(
+                'INSERT INTO users (email, username, password_hash, role, is_verified)
+                 VALUES (:email, :username, :password, "user", 0)'
             );
             $stmt->execute([
                 'email'    => $email,
                 'username' => $username,
+                'password' => $passwordHash,
             ]);
 
-            if ($stmt->fetch()) {
-                $error = 'Email or username already exists.';
-            } else {
-                // Create user
-                $passwordHash = hashPassword($password);
+            $userId = (int)$db->lastInsertId();
 
-                $stmt = $pdo->prepare(
-                    'INSERT INTO users (email, username, password_hash, role)
-                     VALUES (:email, :username, :password_hash, :role)'
-                );
+            $token = generateOTP();
+            $tokenHash = hashToken($token);
 
-                $stmt->execute([
-                    'email'         => $email,
-                    'username'      => $username,
-                    'password_hash' => $passwordHash,
-                    'role'          => 'user',
-                ]);
+            $db->prepare(
+                'INSERT INTO email_verifications (user_id, token_hash, expires_at)
+                 VALUES (:uid, :token, DATE_ADD(NOW(), INTERVAL 15 MINUTE))'
+            )->execute([
+                'uid'   => $userId,
+                'token' => $tokenHash,
+            ]);
 
-                $success = 'Registration successful. You can now log in.';
-            }
+            sendMail(
+                $email,
+                'Your EasyVault verification code',
+                "<p>Your verification code is:</p>
+                 <h2>$token</h2>
+                 <p>This code expires in 15 minutes.</p>"
+            );
 
-        } catch (Throwable $e) {
-            error_log('Signup error: ' . $e->getMessage());
-            $error = 'An unexpected error occurred. Please try again.';
+            $success = 'Account created successfully. Please verify your email.';
         }
     }
 }
@@ -68,33 +73,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sign Up – EasyVault</title>
+    <title>Signup – EasyVault</title>
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
-<div class="box">
-    <h2>Create Account</h2>
+<div class="page-center">
 
-    <?php if ($error): ?>
-        <p class="error"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+    <!-- Brand -->
+    <div class="brand">
+        <h1>EasyVault.KRD 🔐</h1>
+        <p class="brand-sub">
+            Secure Password Vault • Kurdistan 
+        </p>
+    </div>
 
-    <?php if ($success): ?>
-        <p class="success"><?= htmlspecialchars($success) ?></p>
-    <?php endif; ?>
+    <!-- Signup Card -->
+    <div class="card auth-card">
 
-    <form method="post" novalidate>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Sign Up</button>
-    </form>
+        <div class="card-header">
+            <h2>Create Account</h2>
+            <p>Start securing your credentials</p>
+        </div>
 
-    <p>
-        Already have an account?
-        <a href="/login.php">Login</a>
-    </p>
+        <div class="card-body">
+
+            <?php if ($error): ?>
+                <div class="alert error">
+                    <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($success): ?>
+                <div class="alert success">
+                    <?= htmlspecialchars($success) ?>
+                </div>
+
+                <p style="text-align:center; margin-bottom:10px;">
+                    <a href="/verify.php" class="btn-primary" style="display:inline-block; width:auto; padding:10px 20px;">
+                        Verify Email
+                    </a>
+                </p>
+
+                <p style="text-align:center; font-size:0.85rem; color:#64748b;">
+                    Enter the 6-digit code sent to your email.
+                </p>
+
+            <?php else: ?>
+
+                <form method="post">
+
+                    <label for="email">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        placeholder="you@example.com"
+                    >
+
+                    <label for="username">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        required
+                        placeholder="yourusername"
+                    >
+
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        placeholder="Create a strong password"
+                    >
+
+                    <button type="submit" class="btn-primary">
+                        Create Account
+                    </button>
+                </form>
+
+            <?php endif; ?>
+
+        </div>
+
+        <div class="card-footer">
+            <a href="/login.php">Back to login</a>
+        </div>
+
+    </div>
+
 </div>
 
 </body>

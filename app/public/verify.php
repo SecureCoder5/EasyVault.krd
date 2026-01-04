@@ -1,98 +1,125 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../security/token.php';
 
-$message = '';
 $error = '';
+$verified = false;
 
-$token = $_GET['token'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-if (!$token) {
-    $error = "Invalid verification link.";
-} else {
+    $code = trim($_POST['code'] ?? '');
+    $hash = hashToken($code);
 
-    // Fetch verification record
-    $stmt = $pdo->prepare(
-        "SELECT ev.id, ev.user_id, ev.token_hash, ev.expires_at, u.is_verified
+    $db = getDB();
+    $stmt = $db->prepare(
+        'SELECT ev.id, ev.user_id
          FROM email_verifications ev
-         JOIN users u ON ev.user_id = u.id
-         WHERE ev.expires_at > NOW()"
+         WHERE ev.token_hash = :hash
+           AND ev.used = 0
+           AND ev.expires_at > NOW()'
     );
-    $stmt->execute();
+    $stmt->execute(['hash' => $hash]);
+    $row = $stmt->fetch();
 
-    $found = false;
+    if ($row) {
+        $db->prepare(
+            'UPDATE users SET is_verified = 1 WHERE id = :uid'
+        )->execute(['uid' => $row['user_id']]);
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if (verifyToken($token, $row['token_hash'])) {
-            $found = true;
+        $db->prepare(
+            'UPDATE email_verifications SET used = 1 WHERE id = :id'
+        )->execute(['id' => $row['id']]);
 
-            if ($row['is_verified']) {
-                $message = "Your account is already verified.";
-            } else {
-                // Mark user as verified
-                $update = $pdo->prepare(
-                    "UPDATE users SET is_verified = 1 WHERE id = ?"
-                );
-                $update->execute([$row['user_id']]);
-
-                // Remove used token
-                $delete = $pdo->prepare(
-                    "DELETE FROM email_verifications WHERE id = ?"
-                );
-                $delete->execute([$row['id']]);
-
-                $message = "✅ Email verified successfully. You can now log in.";
-            }
-            break;
-        }
-    }
-
-    if (!$found) {
-        $error = "Verification link is invalid or expired.";
+        $verified = true;
+    } else {
+        $error = 'Invalid or expired verification code.';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Email Verification – EasyVault</title>
-    <style>
-        body { font-family: Arial; background:#f4f4f4; }
-        .box {
-            width: 420px;
-            margin: 100px auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 6px;
-            text-align: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .success { color: green; }
-        .error { color: red; }
-        a { text-decoration: none; color: #007BFF; }
-    </style>
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
-<div class="box">
-    <h2>Email Verification</h2>
+<div class="page-center">
 
-    <?php if ($message): ?>
-        <p class="success"><?= htmlspecialchars($message) ?></p>
-        <p><a href="login.php">Go to Login</a></p>
-    <?php endif; ?>
+    <!-- Brand -->
+    <div class="brand">
+        <h1>EasyVault 🔐</h1>
+        <p class="brand-sub">
+            Secure Password Vault • Kurdistan 
+        </p>
+    </div>
 
-    <?php if ($error): ?>
-        <p class="error"><?= htmlspecialchars($error) ?></p>
-        <p><a href="signup.php">Back to Signup</a></p>
-    <?php endif; ?>
+    <!-- Verification Card -->
+    <div class="card auth-card">
+
+        <div class="card-header">
+            <h2>Email Verification</h2>
+            <p>Confirm your email address</p>
+        </div>
+
+        <div class="card-body">
+
+            <?php if ($verified): ?>
+                <div class="alert success">
+                    Your email has been verified successfully.
+                </div>
+
+                <p style="text-align:center; margin-top:15px;">
+                    <a href="/login.php" class="btn-primary"
+                       style="display:inline-block; width:auto; padding:10px 20px;">
+                        Proceed to Login
+                    </a>
+                </p>
+
+            <?php else: ?>
+
+                <?php if ($error): ?>
+                    <div class="alert error">
+                        <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
+
+                <p style="font-size:0.9rem; color:#475569; margin-bottom:15px;">
+                    Enter the 6-digit verification code sent to your email address.
+                </p>
+
+                <form method="post">
+
+                    <label for="code">Verification Code</label>
+                    <input
+                        type="text"
+                        id="code"
+                        name="code"
+                        maxlength="6"
+                        required
+                        placeholder="e.g. 123456"
+                        style="text-align:center; letter-spacing:4px;"
+                    >
+
+                    <button type="submit" class="btn-primary">
+                        Verify Email
+                    </button>
+                </form>
+
+            <?php endif; ?>
+
+        </div>
+
+        <div class="card-footer">
+            <a href="/login.php">Back to login</a>
+        </div>
+
+    </div>
+
 </div>
-
-<footer style="text-align:center; margin-top:20px; font-size:12px;">
-    ⚠ Educational Project — EasyVault.krd
-</footer>
 
 </body>
 </html>

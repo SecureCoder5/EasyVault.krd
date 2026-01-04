@@ -1,6 +1,4 @@
-/* =========================
-   Global Reset & Base
-   ========================= */
+/* Global Reset & Base */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -8,95 +6,245 @@
 }
 
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    background: #f4f6f8;
-    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg, #f4f6f8, #eef2f3);
+    color: #1f2933;
     line-height: 1.6;
+    padding: 40px;
 }
 
-/* =========================
-   Layout Container
-   ========================= */
-.box {
-    width: 400px;
-    max-width: 90%;
-    margin: 80px auto;
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+/* Layout Helpers */
+.page-center {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-/* =========================
-   Typography
-   ========================= */
-h1, h2, h3 {
-    margin-bottom: 15px;
-    color: #222;
+.brand {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.brand h1 {
+    font-size: 2.2rem;
+    color: #0f766e;
+}
+
+.brand-sub {
+    font-size: 0.95rem;
+    color: #475569;
+}
+
+/* Headings & Text */
+h1 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+h2 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
 }
 
 p {
-    margin-bottom: 12px;
+    margin-bottom: 15px;
+    color: #334155;
 }
 
-/* =========================
-   Forms
-   ========================= */
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-button {
-    width: 100%;
-    margin-top: 15px;
-    padding: 10px;
-    background: #2d6cdf;
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #1f56b5;
-}
-
-/* =========================
-   Messages
-   ========================= */
-.error {
-    color: #b00020;
-    margin-bottom: 10px;
-}
-
-.success {
-    color: #2e7d32;
-    margin-bottom: 10px;
-}
-
-/* =========================
-   Links
-   ========================= */
+/* Links*/
 a {
-    color: #2d6cdf;
+    color: #0f766e;
     text-decoration: none;
+    font-weight: 500;
 }
 
 a:hover {
     text-decoration: underline;
 }
 
-/* =========================
-   Utility
-   ========================= */
-.text-center {
+/* Cards*/
+.card {
+    background: #ffffff;
+    border-radius: 10px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 20px 25px;
+    background: linear-gradient(90deg, #0f766e, #115e59);
+    color: white;
+}
+
+.card-header h2 {
+    margin-bottom: 4px;
+}
+
+.card-header p {
+    font-size: 0.85rem;
+    color: #d1fae5;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+.card-footer {
+    padding: 15px 25px;
+    background: #f8fafc;
     text-align: center;
+    font-size: 0.9rem;
+}
+
+.card-footer .divider {
+    margin: 0 8px;
+    color: #94a3b8;
+}
+
+/* Forms */
+form {
+    margin-top: 10px;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.95rem;
+    background: #ffffff;
+}
+
+input:focus {
+    outline: none;
+    border-color: #0f766e;
+    box-shadow: 0 0 0 2px rgba(15,118,110,0.15);
+}
+
+/* Buttons*/
+button,
+.btn-primary {
+    width: 100%;
+    background: linear-gradient(90deg, #0f766e, #115e59);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover,
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(15,118,110,0.3);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Secondary & Danger */
+button.secondary {
+    background: #64748b;
+}
+
+button.danger {
+    background: linear-gradient(90deg, #dc2626, #b91c1c);
+}
+
+/* Alerts*/
+.alert {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.alert.error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border-left: 4px solid #dc2626;
+}
+
+.alert.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #0f766e;
+}
+
+/* Tables (Admin / Vault)*/
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    margin-top: 15px;
+}
+
+th {
+    background: #f1f5f9;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
+
+th, td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Dashboard Sections */
+.section {
+    margin-top: 30px;
+    padding: 25px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* Footer / Logout */
+.logout {
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    body {
+        padding: 20px;
+    }
+
+    .card {
+        max-width: 100%;
+    }
+
+    table {
+        font-size: 0.85rem;
+    }
 }

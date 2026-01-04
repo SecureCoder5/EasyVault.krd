@@ -1,3 +1,12 @@
 .env
 vendor/
 node_modules/
+app/public/testmail.php
+storage/
+
+.DS_Store
+.vscode/
+.idea/
+
+mysql_data/
+*.log

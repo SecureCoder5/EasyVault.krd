@@ -1,119 +1,111 @@
 <?php
-session_start();
+declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../security/token.php';
 require_once __DIR__ . '/../lib/Mailer.php';
 
 $message = '';
-$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email = trim($_POST['email'] ?? '');
 
-    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
-    } else {
+    if ($email) {
+        $db = getDB();
 
-        // Always respond generically (prevents user enumeration)
-        $message = "If the email exists, a reset link has been sent.";
+        $stmt = $db->prepare('SELECT id FROM users WHERE email = :email');
+        $stmt->execute(['email' => $email]);
+        $user = $stmt->fetch();
 
-        // Check user
-        $stmt = $pdo->prepare(
-            "SELECT id, is_verified FROM users WHERE email = ? LIMIT 1"
-        );
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            $token = generateToken();
+            $hash = hashToken($token);
 
-        // Only proceed if user exists AND email verified
-        if ($user && $user['is_verified']) {
+            $db->prepare(
+                'INSERT INTO password_resets (user_id, token_hash, expires_at)
+                 VALUES (:uid, :hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))'
+            )->execute([
+                'uid'  => $user['id'],
+                'hash' => $hash,
+            ]);
 
-            // Generate secure token
-            $token     = generateToken();
-            $tokenHash = hashToken($token);
-            $expires   = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            $link = "http://localhost:8080/reset_password.php?token=$token";
 
-            // Store token
-            $stmt = $pdo->prepare(
-                "INSERT INTO password_resets (user_id, token_hash, expires_at)
-                 VALUES (?, ?, ?)"
-            );
-            $stmt->execute([$user['id'], $tokenHash, $expires]);
-
-            // Reset link
-            $resetLink = "http://localhost:8080/reset_password.php?token=$token";
-
-            // Send email (REAL PHPMailer)
-            Mailer::send(
+            sendMail(
                 $email,
-                "EasyVault Password Reset",
-                "
-                <h3>Password Reset Request</h3>
-                <p>You requested to reset your password.</p>
-                <p>
-                    <a href='$resetLink'>$resetLink</a>
-                </p>
-                <p>This link expires in 1 hour.</p>
-                <p>If you did not request this, ignore this email.</p>
-                "
+                'Reset your EasyVault password',
+                "<p>Click the link below to reset your password:</p>
+                 <p><a href='$link'>$link</a></p>
+                 <p>This link expires in 15 minutes.</p>"
             );
         }
     }
+
+    // Always generic (anti-enumeration)
+    $message = 'If the email exists, a reset link has been sent.';
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Forgot Password – EasyVault</title>
-    <style>
-        body { font-family: Arial; background:#f4f4f4; }
-        .box {
-            width: 420px;
-            margin: 100px auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 6px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .error { color: red; }
-        .success { color: green; }
-        a { text-decoration: none; color: #007BFF; }
-    </style>
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
-<div class="box">
-    <h2>Forgot Password</h2>
+<div class="page-center">
 
-    <?php if ($error): ?>
-        <p class="error"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+    <!-- Brand -->
+    <div class="brand">
+        <h1>EasyVault.KRD 🔐</h1>
+        <p class="brand-sub">
+            Secure Password Vault • Kurdistan 
+        </p>
+    </div>
 
-    <?php if ($message): ?>
-        <p class="success"><?= htmlspecialchars($message) ?></p>
-    <?php endif; ?>
+    <!-- Forgot Password Card -->
+    <div class="card auth-card">
 
-    <form method="POST">
-        <input type="email" name="email" placeholder="Your email address" required>
-        <button type="submit">Send Reset Link</button>
-    </form>
+        <div class="card-header">
+            <h2>Forgot Password</h2>
+            <p>Reset access to your account</p>
+        </div>
 
-    <p style="margin-top:10px;">
-        <a href="login.php">Back to Login</a>
-    </p>
+        <div class="card-body">
+
+            <?php if ($message): ?>
+                <div class="alert success">
+                    <?= htmlspecialchars($message) ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="post">
+
+                <label for="email">Email address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    placeholder="you@example.com"
+                >
+
+                <button type="submit" class="btn-primary">
+                    Send Reset Link
+                </button>
+            </form>
+
+        </div>
+
+        <div class="card-footer">
+            <a href="/login.php">Back to login</a>
+        </div>
+
+    </div>
+
 </div>
-
-<footer style="text-align:center; margin-top:20px; font-size:12px;">
-    ⚠ Educational Project — EasyVault.krd
-</footer>
 
 </body>
 </html>

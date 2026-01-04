@@ -2,13 +2,7 @@
 declare(strict_types=1);
 
 /**
- * =========================
- * PASSWORD HANDLING
- * =========================
- */
-
-/**
- * Hash a plaintext password securely.
+ * Hash user passwords securely
  */
 function hashPassword(string $password): string
 {
@@ -16,7 +10,7 @@ function hashPassword(string $password): string
 }
 
 /**
- * Verify a plaintext password against its hash.
+ * Verify user password
  */
 function verifyPassword(string $password, string $hash): bool
 {
@@ -24,33 +18,17 @@ function verifyPassword(string $password, string $hash): bool
 }
 
 /**
- * =========================
- * VAULT ENCRYPTION (AES-256-GCM)
- * =========================
+ * Encrypt sensitive vault data (AES-256-GCM)
  */
-
-/**
- * Derive a 256-bit encryption key from the master secret.
- */
-function deriveEncryptionKey(): string
+function encryptVaultData(string $plaintext): array
 {
-    $masterKey = getenv('APP_KEY');
+    $key = $_ENV['VAULT_KEY'] ?? '';
 
-    if (!$masterKey) {
-        throw new RuntimeException('APP_KEY is not set.');
+    if (strlen($key) < 32) {
+        throw new RuntimeException('Invalid vault key');
     }
 
-    // Derive a fixed-length 32-byte key
-    return hash('sha256', $masterKey, true);
-}
-
-/**
- * Encrypt sensitive data.
- */
-function encryptSecret(string $plaintext): array
-{
-    $key = deriveEncryptionKey();
-    $iv  = random_bytes(12); // Recommended size for GCM
+    $iv = random_bytes(12); // GCM standard
     $tag = '';
 
     $ciphertext = openssl_encrypt(
@@ -63,7 +41,7 @@ function encryptSecret(string $plaintext): array
     );
 
     if ($ciphertext === false) {
-        throw new RuntimeException('Encryption failed.');
+        throw new RuntimeException('Encryption failed');
     }
 
     return [
@@ -74,11 +52,15 @@ function encryptSecret(string $plaintext): array
 }
 
 /**
- * Decrypt encrypted data.
+ * Decrypt vault data
  */
-function decryptSecret(string $ciphertext, string $iv, string $tag): string
+function decryptVaultData(string $ciphertext, string $iv, string $tag): string
 {
-    $key = deriveEncryptionKey();
+    $key = $_ENV['VAULT_KEY'] ?? '';
+
+    if (strlen($key) < 32) {
+        throw new RuntimeException('Invalid vault key');
+    }
 
     $plaintext = openssl_decrypt(
         base64_decode($ciphertext),
@@ -90,7 +72,7 @@ function decryptSecret(string $ciphertext, string $iv, string $tag): string
     );
 
     if ($plaintext === false) {
-        throw new RuntimeException('Decryption failed.');
+        throw new RuntimeException('Decryption failed');
     }
 
     return $plaintext;

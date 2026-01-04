@@ -2,35 +2,35 @@
 declare(strict_types=1);
 
 /**
- * Generate a cryptographically secure random token.
- * Default: 32 bytes = 64 hex chars.
+ * Generate secure random token (for email verification, resets)
  */
-function generateToken(int $bytes = 32): string
+function generateToken(int $length = 32): string
 {
-    return bin2hex(random_bytes($bytes));
+    return bin2hex(random_bytes($length));
 }
 
 /**
- * Hash a token for safe database storage.
- * Uses one-way hashing (bcrypt).
+ * Hash token before storing in DB
  */
 function hashToken(string $token): string
 {
-    return password_hash($token, PASSWORD_DEFAULT);
+    return hash('sha256', $token);
 }
 
 /**
- * Verify a raw token against its stored hash.
+ * Verify token against hash
  */
 function verifyToken(string $token, string $hash): bool
 {
-    return password_verify($token, $hash);
+    return hash_equals($hash, hashToken($token));
 }
 
-/**
- * Generate an expiration timestamp (UTC).
- */
-function tokenExpiresIn(int $minutes): string
+function generateOTP(int $digits = 6): string
 {
-    return gmdate('Y-m-d H:i:s', time() + ($minutes * 60));
+    return str_pad(
+        (string) random_int(0, 10 ** $digits - 1),
+        $digits,
+        '0',
+        STR_PAD_LEFT
+    );
 }

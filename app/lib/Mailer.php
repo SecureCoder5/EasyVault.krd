@@ -6,44 +6,75 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-class Mailer
+/**
+ * Send an email using configured mail mode
+ *
+ * @throws RuntimeException on failure
+ */
+function sendMail(string $to, string $subject, string $htmlBody): void
 {
-    /**
-     * Send an email.
-     * In development, emails can be logged instead of sent.
-     */
-    public static function send(string $to, string $subject, string $body): bool
-    {
-        $host = getenv('MAIL_HOST');
-        $user = getenv('MAIL_USER');
-        $pass = getenv('MAIL_PASS');
-        $port = getenv('MAIL_PORT');
-        $mode = getenv('MAIL_MODE') ?: 'dev'; // dev | prod
+    $mode = $_ENV['MAIL_MODE'] ?? 'dev';
 
-        // Dev mode: log emails instead of sending
-        if ($mode === 'dev') {
-            error_log("MAIL DEV MODE\nTo: {$to}\nSubject: {$subject}\nBody:\n{$body}");
-            return true;
-        }
+    if ($mode === 'dev') {
+        logDevMail($to, $subject, $htmlBody);
+        return;
+    }
 
-        if (!$host || !$user || !$pass || !$port) {
-            error_log('Mail configuration incomplete.');
-            return false;
-        }
+    sendProdMail($to, $subject, $htmlBody);
+}
 
-        $mail = new PHPMailer(true);
+/**
+ * The main mail function sending using SMTP
+ */
+function sendProdMail(string $to, string $subject, string $htmlBody): void
+{
+    $mail = new PHPMailer(true);
 
-        try {
-            $mail->isSMTP();
-            $mail->Host       = $host;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $user;
-            $mail->Password   = $pass;
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = (int)$port;
+    try {
+        $mail->isSMTP();
+        $mail->Host       = $_ENV['MAIL_HOST'];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $_ENV['MAIL_USER'];
+        $mail->Password   = $_ENV['MAIL_PASS'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = (int) $_ENV['MAIL_PORT'];
 
-            $mail->setFrom($user, 'EasyVault.krd');
-            $mail->addAddress($to);
+        $mail->setFrom(
+            $_ENV['MAIL_USER'],
+            $_ENV['MAIL_FROM_NAME'] ?? 'EasyVault'
+        );
 
-            $mail->isHTML(true);
-            $mail->Sub
+        $mail->addAddress($to);
+
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $htmlBody;
+
+        $mail->send();
+    } catch (Exception $e) {
+        throw new RuntimeException('Mail sending failed');
+    }
+}
+
+/**
+ * this part is for development where email will not be sent, this is only used for development phase
+ */
+function logDevMail(string $to, string $subject, string $htmlBody): void
+{
+    $logDir = __DIR__ . '/../../storage/logs';
+    $logFile = $logDir . '/mail.log';
+
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0750, true);
+    }
+
+    $entry = sprintf(
+        "[%s]\nTO: %s\nSUBJECT: %s\nBODY:\n%s\n\n--------------------\n",
+        date('Y-m-d H:i:s'),
+        $to,
+        $subject,
+        strip_tags($htmlBody)
+    );
+
+    file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+}
