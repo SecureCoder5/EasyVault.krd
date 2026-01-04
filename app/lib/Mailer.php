@@ -1,37 +1,42 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
-
-function sendMail(string $to, string $subject, string $body): void
+function sendMail(string $to, string $subject, string $html): void
 {
-    $mail = new PHPMailer(true);
+    $apiKey = getenv('MAILGUN_API_KEY');
+    $domain = getenv('MAILGUN_DOMAIN');
 
-    try {
-        $mail->isSMTP();
-        $mail->Host       = getenv('MAIL_HOST');
-        $mail->SMTPAuth   = true;
-        $mail->Username   = getenv('MAIL_USER');
-        $mail->Password   = getenv('MAIL_PASS');
-        $mail->Port       = (int) getenv('MAIL_PORT');
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    if (!$apiKey || !$domain) {
+        throw new RuntimeException('Mailgun config missing');
+    }
 
-        $mail->setFrom(
-            getenv('MAIL_FROM'),
-            getenv('MAIL_FROM_NAME') ?: 'EasyVault'
-        );
+    $url = "https://api.mailgun.net/v3/{$domain}/messages";
 
-        $mail->addAddress($to);
+    $postData = [
+        'from'    => "EasyVault.krd <postmaster@{$domain}>",
+        'to'      => $to,
+        'subject' => $subject,
+        'html'    => $html,
+    ];
 
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $body;
+    $ch = curl_init();
 
-        $mail->send();
-    } catch (Exception $e) {
-        error_log('MAIL ERROR: ' . $mail->ErrorInfo);
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $url,
+        CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
+        CURLOPT_USERPWD        => "api:{$apiKey}",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $postData,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    if ($response === false || $httpCode >= 400) {
+        error_log("Mailgun error ({$httpCode}): " . curl_error($ch));
+        curl_close($ch);
         throw new RuntimeException('Email failed');
     }
-}
 
+    curl_close($ch);
+}
