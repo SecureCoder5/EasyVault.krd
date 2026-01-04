@@ -8,21 +8,25 @@ function sendMail(string $to, string $subject, string $body): void
 {
     $mail = new PHPMailer(true);
 
-    // 🔴 FORCE DEBUG OUTPUT TO RAILWAY LOGS
-    $mail->SMTPDebug  = 3;
-    $mail->Debugoutput = function ($str, $level) {
-        error_log("SMTP DEBUG [$level]: $str");
-    };
-
     try {
         $mail->isSMTP();
-        $mail->Host       = getenv('MAIL_HOST');
+
+        // Gmail SMTPS (THIS IS THE KEY FIX)
+        $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
         $mail->Username   = getenv('MAIL_USER');
         $mail->Password   = getenv('MAIL_PASS');
-        $mail->Port       = (int) getenv('MAIL_PORT');
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Timeout    = 15;
+        $mail->Port       = 465;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+
+        // Required on Railway to avoid TLS handshake issues
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer'       => false,
+                'verify_peer_name'  => false,
+                'allow_self_signed' => true,
+            ]
+        ];
 
         $mail->setFrom(
             getenv('MAIL_FROM'),
@@ -35,12 +39,12 @@ function sendMail(string $to, string $subject, string $body): void
         $mail->Subject = $subject;
         $mail->Body    = $body;
 
-        $mail->send();
-
-        error_log('SMTP SUCCESS: email sent');
+        if (!$mail->send()) {
+            throw new RuntimeException($mail->ErrorInfo);
+        }
 
     } catch (Exception $e) {
-        error_log('SMTP FAILURE: ' . $mail->ErrorInfo);
+        error_log('MAIL ERROR: ' . $e->getMessage());
         throw new RuntimeException('Email failed');
     }
 }
