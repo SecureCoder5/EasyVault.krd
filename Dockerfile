@@ -16,32 +16,34 @@ RUN apt-get update && apt-get install -y \
 # -----------------------------
 # Apache document root
 # -----------------------------
-ENV APACHE_DOCUMENT_ROOT=/var/www/html
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/app/public
+
+RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+    /etc/apache2/sites-available/*.conf \
+    /etc/apache2/apache2.conf \
+    /etc/apache2/conf-available/*.conf
+
+# -----------------------------
+# Working directory
+# -----------------------------
+WORKDIR /var/www/html
 
 # -----------------------------
 # Copy application
 # -----------------------------
-WORKDIR /var/www/html
-
-# Copy PUBLIC first (this is critical)
-COPY app/public/ ./
-
-# Copy rest of app
-COPY app/config ./config
-COPY app/lib ./lib
-COPY app/security ./security
-
-# Composer
+COPY app ./app
 COPY composer.json composer.lock ./
-COPY vendor ./vendor
 
 # -----------------------------
-# Apache config fix
+# Install Composer dependencies
 # -----------------------------
-RUN sed -ri 's!/var/www/html!/var/www/html!g' /etc/apache2/sites-available/*.conf \
- && sed -ri 's!/var/www/!/var/www/html!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && composer install --no-dev --optimize-autoloader --no-interaction
 
 # -----------------------------
 # Permissions
 # -----------------------------
-RUN chown -R www-data:www-data /var/www/html
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+EXPOSE 80
