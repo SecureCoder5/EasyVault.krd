@@ -61,4 +61,4 @@ RUN chown -R www-data:www-data /var/www/html \
 
 EXPOSE 80
 
-CMD service php8.2-fpm start && apachectl -D FOREGROUND
+CMD php-fpm -D && apachectl -D FOREGROUND
