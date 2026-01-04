@@ -1,7 +1,7 @@
 FROM php:8.2-apache-bookworm
 
 # -----------------------------
-# Install system dependencies
+# System dependencies
 # -----------------------------
 RUN apt-get update && apt-get install -y \
     unzip \
@@ -14,27 +14,32 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------
-# Apache Document Root
+# Apache document root
 # -----------------------------
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-
-RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
- && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+ENV APACHE_DOCUMENT_ROOT=/var/www/html
 
 # -----------------------------
-# Application files
+# Copy application
 # -----------------------------
 WORKDIR /var/www/html
 
-# Copy ONLY app contents (no double nesting)
-COPY ./app/public ./public
-COPY ./app/config ./config
-COPY ./app/lib ./lib
-COPY ./app/security ./security
-COPY ./app/public/assets ./public/assets
+# Copy PUBLIC first (this is critical)
+COPY app/public/ ./
 
-COPY ./vendor ./vendor
+# Copy rest of app
+COPY app/config ./config
+COPY app/lib ./lib
+COPY app/security ./security
+
+# Composer
 COPY composer.json composer.lock ./
+COPY vendor ./vendor
+
+# -----------------------------
+# Apache config fix
+# -----------------------------
+RUN sed -ri 's!/var/www/html!/var/www/html!g' /etc/apache2/sites-available/*.conf \
+ && sed -ri 's!/var/www/!/var/www/html!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # -----------------------------
 # Permissions
