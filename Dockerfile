@@ -11,9 +11,15 @@ RUN apt-get update && apt-get install -y \
     default-mysql-client \
     && docker-php-ext-install pdo pdo_mysql zip \
     && a2enmod rewrite \
-    && a2dismod mpm_event \
-    && a2enmod mpm_prefork \
     && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------
+# FORCE Apache MPM FIX (CRITICAL)
+# -----------------------------
+RUN a2dismod mpm_event || true \
+ && a2dismod mpm_worker || true \
+ && a2dismod mpm_prefork || true \
+ && a2enmod mpm_prefork
 
 # -----------------------------
 # Apache document root
