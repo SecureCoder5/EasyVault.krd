@@ -2,33 +2,56 @@
 declare(strict_types=1);
 
 /**
- * Hash user passwords securely
+ * ================================
+ * CRYPTO UTILITIES – EASYVAULT
+ * ================================
+ *
+ * - Password hashing / verification
+ * - Vault encryption / decryption (AES-256-GCM)
  */
-function hashPassword(string $password): string
-{
-    return password_hash($password, PASSWORD_DEFAULT);
-}
 
 /**
- * Verify user password
+ * --------------------------------
+ * PASSWORD HASHING (LOGIN SYSTEM)
+ * --------------------------------
  */
+
+function hashPassword(string $password): string
+{
+    return password_hash($password, PASSWORD_ARGON2ID);
+}
+
 function verifyPassword(string $password, string $hash): bool
 {
     return password_verify($password, $hash);
 }
 
 /**
- * Encrypt sensitive vault data (AES-256-GCM)
+ * --------------------------------
+ * VAULT ENCRYPTION (AES-256-GCM)
+ * --------------------------------
+ */
+
+/**
+ * Encrypt sensitive vault data
+ *
+ * @param string $plaintext
+ * @return array{ciphertext: string, iv: string, tag: string}
  */
 function encryptVaultData(string $plaintext): array
 {
-    $key = $_ENV['VAULT_KEY'] ?? '';
-
-    if (strlen($key) < 32) {
+    if (
+        empty($_SESSION['vault_key']) ||
+        !is_string($_SESSION['vault_key']) ||
+        strlen($_SESSION['vault_key']) !== 32
+    ) {
         throw new RuntimeException('Invalid vault key');
     }
 
-    $iv = random_bytes(12); // GCM standard
+    $key = $_SESSION['vault_key'];
+
+    // AES-GCM recommended IV size = 12 bytes
+    $iv = random_bytes(12);
     $tag = '';
 
     $ciphertext = openssl_encrypt(
@@ -52,15 +75,27 @@ function encryptVaultData(string $plaintext): array
 }
 
 /**
- * Decrypt vault data
+ * Decrypt sensitive vault data
+ *
+ * @param string $ciphertext
+ * @param string $iv
+ * @param string $tag
+ * @return string
  */
-function decryptVaultData(string $ciphertext, string $iv, string $tag): string
-{
-    $key = $_ENV['VAULT_KEY'] ?? '';
-
-    if (strlen($key) < 32) {
+function decryptVaultData(
+    string $ciphertext,
+    string $iv,
+    string $tag
+): string {
+    if (
+        empty($_SESSION['vault_key']) ||
+        !is_string($_SESSION['vault_key']) ||
+        strlen($_SESSION['vault_key']) !== 32
+    ) {
         throw new RuntimeException('Invalid vault key');
     }
+
+    $key = $_SESSION['vault_key'];
 
     $plaintext = openssl_decrypt(
         base64_decode($ciphertext),
