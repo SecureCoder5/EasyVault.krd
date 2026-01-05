@@ -37,11 +37,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please verify your email first.';
             $showVerifyLink = true;
         } else {
+            // 🔐 Secure session
             session_regenerate_id(true);
 
+            // ✅ Auth session
             $_SESSION['user_id'] = (int)$user['id'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['user_verified'] = true;
+
+            /**
+             * 🔑 DERIVE VAULT KEY (CRITICAL)
+             * 32 bytes, binary-safe
+             * Recreated every login
+             */
+            $_SESSION['vault_key'] = hash_pbkdf2(
+                'sha256',
+                $password,            // plaintext password
+                $_ENV['APP_KEY'],     // app-level secret
+                100000,               // iterations
+                32,                   // 256-bit key
+                true                  // raw binary
+            );
 
             header('Location: /dashboard.php');
             exit;
@@ -60,11 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="page-center">
 
-    <!-- Brand / Header -->
+    <!-- Brand -->
     <div class="brand">
         <h1>EasyVault.KRD 🔐</h1>
         <p class="brand-sub">
-            Secure Password Vault • Kurdistan 
+            Secure Password Vault • Kurdistan
         </p>
     </div>
 
