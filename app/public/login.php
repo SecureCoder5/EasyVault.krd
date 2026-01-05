@@ -21,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $db->prepare(
             'SELECT id, password_hash, role, is_verified, is_active
-             FROM users WHERE email = :email'
+             FROM users
+             WHERE email = :email'
         );
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
@@ -37,27 +38,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please verify your email first.';
             $showVerifyLink = true;
         } else {
-            // 🔐 Secure session
-            session_regenerate_id(true);
-
-            // ✅ Auth session
-            $_SESSION['user_id'] = (int)$user['id'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['user_verified'] = true;
 
             /**
-             * 🔑 DERIVE VAULT KEY (CRITICAL)
-             * 32 bytes, binary-safe
-             * Recreated every login
+             * --------------------------------
+             * SESSION + VAULT KEY DERIVATION
+             * --------------------------------
+             */
+
+            session_regenerate_id(true);
+
+            // Application-level secret (Railway ENV)
+            $appKey = $_ENV['APP_KEY'] ?? null;
+
+            if (!$appKey || strlen($appKey) < 16) {
+                throw new RuntimeException('APP_KEY missing or too weak');
+            }
+
+            /**
+             * Derive vault key using:
+             * - User password (secret)
+             * - APP_KEY (application secret)
+             * - PBKDF2 SHA-256 (100k rounds)
+             * - 32 bytes output (AES-256)
              */
             $_SESSION['vault_key'] = hash_pbkdf2(
                 'sha256',
-                $password,            // plaintext password
-                $_ENV['APP_KEY'],     // app-level secret
-                100000,               // iterations
-                32,                   // 256-bit key
-                true                  // raw binary
+                $password,
+                $appKey,
+                100000,
+                32,
+                true
             );
+
+            // Auth session data
+            $_SESSION['user_id'] = (int)$user['id'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['user_verified'] = true;
 
             header('Location: /dashboard.php');
             exit;
@@ -104,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form method="post">
+            <form method="post" novalidate>
 
                 <label for="email">Email</label>
                 <input
