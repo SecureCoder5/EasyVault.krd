@@ -66,3 +66,32 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     FOREIGN KEY (actor_user_id) REFERENCES users(id),
     FOREIGN KEY (target_user_id) REFERENCES users(id)
 );
+
+
+
+-- ==============================
+-- PASSWORD RESET (OTP-BASED)
+-- ==============================
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    user_id INT NOT NULL,
+
+    otp CHAR(6) NOT NULL,
+
+    expires_at DATETIME NOT NULL,
+
+    used TINYINT(1) NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_password_resets_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    INDEX idx_password_resets_otp (otp),
+    INDEX idx_password_resets_expires (expires_at),
+    INDEX idx_password_resets_user (user_id)
+);
