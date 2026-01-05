@@ -1,37 +1,27 @@
-<?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-function sendMail(string $to, string $subject, string $html): void
-{
-    $apiKey = getenv('ELASTIC_EMAIL_API_KEY');
+require __DIR__ . '/../vendor/autoload.php';
 
-    if (!$apiKey) {
-        throw new RuntimeException('Elastic Email API key missing');
-    }
+$mail = new PHPMailer(true);
 
-    $data = http_build_query([
-        'apikey'   => $apiKey,
-        'from'     => 'EasyVault <noreply@easyvault.local>',
-        'to'       => $to,
-        'subject'  => $subject,
-        'bodyHtml' => $html,
-    ]);
+try {
+    $mail->isSMTP();
+    $mail->Host       = $_ENV['MAIL_HOST'];
+    $mail->SMTPAuth   = true;
+    $mail->Username   = $_ENV['MAIL_USERNAME'];
+    $mail->Password   = $_ENV['MAIL_PASSWORD'];
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = (int)$_ENV['MAIL_PORT'];
 
-    $ch = curl_init('https://api.elasticemail.com/v2/email/send');
+    $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
+    $mail->addAddress($userEmail);
 
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $data,
-    ]);
+    $mail->isHTML(true);
+    $mail->Subject = 'Verify your email';
+    $mail->Body    = '<p>Your verification code is <b>'.$code.'</b></p>';
 
-    $response = curl_exec($ch);
-    $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    if ($response === false || $status !== 200) {
-        error_log('Elastic Email failed: ' . $response);
-        curl_close($ch);
-        throw new RuntimeException('Email failed');
-    }
-
-    curl_close($ch);
+    $mail->send();
+} catch (Exception $e) {
+    error_log('Mail error: ' . $mail->ErrorInfo);
 }
