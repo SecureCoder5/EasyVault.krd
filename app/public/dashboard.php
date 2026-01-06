@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../security/auth.php';
+require_once __DIR__ . '/../lib/hibp_email.php';
+
 
 requireLogin();
 
