@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (
             !$user ||
-            !verifyPassword($password, $user['password_hash'])
+            !password_verify($password, $user['password_hash'])
         ) {
             $error = 'Invalid credentials';
 
