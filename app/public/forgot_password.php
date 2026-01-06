@@ -45,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      WHERE id = :id'
                 );
                 $stmt->execute([
-                    'hash' => $otpHash,
+                    'hash'    => $otpHash,
                     'expires' => $expires,
-                    'id' => $user['id']
+                    'id'      => $user['id']
                 ]);
 
                 // Send email
@@ -59,12 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $success = 'OTP sent to your email address.';
             }
-        } catch (Throwable $e) {
-          
-    error_log('[FORGOT PASSWORD ERROR] ' . $e->getMessage());
-    $error = 'Something went wrong. Please try again later.';
-}
 
+        } catch (Throwable $e) {
+            error_log('[FORGOT PASSWORD ERROR] ' . $e->getMessage());
+            $error = 'Something went wrong. Please try again later.';
         }
     }
 }
