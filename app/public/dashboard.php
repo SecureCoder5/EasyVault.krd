@@ -20,11 +20,10 @@ if (($_SESSION['role'] ?? '') === 'admin') {
 $emailResult = null;
 $emailError  = null;
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
 
-    // Simple rate limit (10 seconds)
     $_SESSION['email_check_last'] ??= 0;
+
     if (time() - $_SESSION['email_check_last'] < 10) {
         $emailError = 'Please wait a few seconds before checking again.';
     } else {
@@ -43,49 +42,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
         }
     }
 }
-?>
 
+/* -------------------------------
+   Password Security Checker Logic
+-------------------------------- */
+$passwordResult = null;
+$passwordError  = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_password'])) {
+
+    $password = $_POST['password'] ?? '';
+
+    if (strlen($password) < 6) {
+        $passwordError = 'Password is too short to analyse.';
+    } else {
+        try {
+            $breached = isPasswordBreached($password);
+            $strength = passwordStrength($password);
+            $crack    = estimateCrackTime($password);
+
+            $passwordResult = [
+                'breached' => $breached,
+                'score'    => $strength['score'],
+                'label'    => $strength['label'],
+                'entropy'  => $crack['entropy'],
+                'online'   => $crack['online'],
+                'offline'  => $crack['offline'],
+            ];
+        } catch (Exception $e) {
+            $passwordError = 'Password analysis service is unavailable.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Dashboard – EasyVault</title>
+    <title>Security Tools – EasyVault</title>
     <link rel="stylesheet" href="/assets/style.css">
     <style>
         .card {
             background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-            max-width: 600px;
+            border-radius: 10px;
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 650px;
         }
         .card h3 {
             margin-top: 0;
         }
-        .success {
-            color: #1a7f37;
-        }
-        .error {
-            color: #b00020;
-        }
-        .warning {
-            color: #b45309;
-        }
+        .success { color: #1a7f37; }
+        .error { color: #b00020; }
+        .warning { color: #b45309; }
+        ul { margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<h1>Welcome to EasyVault</h1>
-    <nav style="margin-bottom: 20px;">
+<h1>Security Tools</h1>
+
+<nav style="margin-bottom: 25px;">
     <a href="/user_dashboard.php">🔐 My Vault</a> |
     <a href="/dashboard.php">🛡️ Security Tools</a> |
     <a href="/logout.php">🚪 Logout</a>
 </nav>
 
-
 <!-- ===============================
-     EMAIL BREACH CHECKER CARD
+     EMAIL BREACH CHECKER
 ================================== -->
 <div class="card">
     <h3>🔍 Email Breach Checker</h3>
@@ -100,7 +125,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
             name="email"
             placeholder="you@example.com"
             required
-            style="width: 100%; padding: 8px; margin-bottom: 10px;"
         >
         <button type="submit" name="check_email">Check Email</button>
     </form>
@@ -119,22 +143,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
             <ul>
                 <?php foreach ($emailResult as $breach): ?>
                     <li>
-    <strong><?= htmlspecialchars($breach['Name']) ?></strong>
-    <?php if (!empty($breach['BreachDate'])): ?>
-        (<?= htmlspecialchars($breach['BreachDate']) ?>)
-    <?php else: ?>
-        (Date not disclosed)
-    <?php endif; ?>
-</li>
-
+                        <strong><?= htmlspecialchars($breach['Name']) ?></strong>
+                        (<?= htmlspecialchars($breach['BreachDate'] ?? 'Date not disclosed') ?>)
+                    </li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
     <?php endif; ?>
 </div>
 
-<!-- You can add more cards here later -->
-<!-- Vault summary, security score, recent activity, etc. -->
+<!-- ===============================
+     PASSWORD SECURITY CHECKER
+================================== -->
+<div class="card">
+    <h3>🔐 Password Security Checker</h3>
+    <p>
+        Check whether a password appears in known wordlists and estimate
+        how long it would take to crack. Passwords are never stored or logged.
+    </p>
+
+    <form method="POST">
+        <input
+            type="password"
+            name="password"
+            placeholder="Enter password to test"
+            required
+        >
+        <button type="submit" name="check_password">Check Password</button>
+    </form>
+
+    <?php if ($passwordError): ?>
+        <p class="error"><?= htmlspecialchars($passwordError) ?></p>
+    <?php endif; ?>
+
+    <?php if ($passwordResult): ?>
+
+        <?php if ($passwordResult['breached']): ?>
+            <p class="error">⚠️ This password was found in known breaches.</p>
+        <?php else: ?>
+            <p class="success">✅ This password was not found in known breaches.</p>
+        <?php endif; ?>
+
+        <ul>
+            <li><strong>Strength:</strong> <?= $passwordResult['label'] ?> (<?= $passwordResult['score'] ?>/100)</li>
+            <li><strong>Entropy:</strong> <?= $passwordResult['entropy'] ?> bits</li>
+            <li><strong>Online attack:</strong> <?= $passwordResult['online'] ?></li>
+            <li><strong>Offline attack:</strong> <?= $passwordResult['offline'] ?></li>
+        </ul>
+
+    <?php endif; ?>
+</div>
 
 </body>
 </html>
