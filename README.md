@@ -1,115 +1,155 @@
-# EasyVault.krd
-# 🔐 EasyVault.krd – Secure Password Manager (DevSecOps Project)
+# EasyVault.KRD 🔐
 
-EasyVault.krd is a secure, PHP-based password manager web application designed to demonstrate core **DevSecOps principles**, including secure application development, Docker containerization, and automated CI/CD with integrated security scanning.
+A secure, containerized password vault application built with **PHP**, **Docker**, and **MySQL**, designed with strong security principles and DevSecOps practices in mind.
+Website also has features like checking weather your email has been in a recent databreach through API's
+Also the website checks if your password is strong, also checks if your password is in any wordlists
+---
 
-The project goes beyond a basic CRUD application by implementing real-world security controls such as encryption, role-based access control, audit logging, and automated security analysis.
+## 📌 Project Overview
+
+EasyVault.KRD is a web-based password manager that allows users to securely store and manage credentials. The system emphasizes **secure authentication**, **encryption**, **role-based access control**, and **safe deployment practices**.
+
 
 ---
 
-## 📌 Project Objectives
+## ✨ Key Features
 
-- Build a secure web application using PHP and MySQL
-- Apply secure coding practices
-- Containerize the application using Docker
-- Implement a CI/CD pipeline using GitHub Actions
-- Integrate security scanning into the pipeline
-- Document security decisions and architecture
+### 👤 User Features
+
+* Secure user registration and login
+* Email verification using OTP
+* Encrypted password vault (AES-256-GCM)
+* Add, edit, view, and delete stored credentials
+* Password visibility toggle (Show/Hide)
+
+### 🛡️ Security Tools
+
+* **Email Breach Checker** using Have I Been Pwned API
+* **Password Strength Analyzer** (length, complexity, entropy)
+* **Password Breach Check** using HIBP k-anonymity model (no password exposure)
+
+### 👑 Admin Features
+
+* Admin dashboard
+* View and manage users
+* View audit logs
+* Role-based access control (admin vs user)
 
 ---
 
-## 🛠️ Technology Stack
+## 🔐 Security Design
 
-| Component | Technology |
-|--------|-----------|
-| Backend | PHP 8.2 |
-| Web Server | Apache |
-| Database | MySQL |
-| Containerization | Docker & Docker Compose |
-| CI/CD | GitHub Actions |
-| Dependency Security | Composer Audit |
-| Container Security | Trivy |
-| Version Control | Git & GitHub |
+Security was a primary design goal throughout the project:
+
+* **Password Hashing**: Argon2id (industry standard)
+* **Vault Encryption**: AES-256-GCM with per-session derived key
+* **Key Derivation**: PBKDF2 (SHA-256, 100,000 iterations)
+* **Session Protection**: Session regeneration on login
+* **Rate Limiting**: Applied to sensitive actions (email checks)
+* **Secrets Management**: All secrets stored in environment variables
+* **No Plaintext Password Exposure**: HIBP k-anonymity model used
+
+---
+
+## 🏗️ Architecture Overview
+
+**Tech Stack:**
+
+* Frontend: HTML, CSS
+* Backend: PHP 8
+* Database: MySQL 8
+* Containerization: Docker & Docker Compose
+* Deployment: Railway
+
+```
+Browser
+   ↓
+PHP (Apache)
+   ↓
+MySQL Database
+```
+
+Sensitive operations (authentication, encryption, email, API calls) are isolated into dedicated libraries.
+
+---
+
+## 🐳 Docker & Deployment
+
+The application is fully containerized and runs consistently across environments.
+
+### Docker Components
+
+* PHP-Apache container
+* MySQL container
+
+### Deployment
+
+* Hosted on **Railway**
+* Environment variables configured securely via Railway dashboard
+
+---
+
+## 🔁 CI/CD Pipeline
+
+The project follows CI/CD best practices:
+
+* Version-controlled on GitHub
+* Container-based deployment
+* Secrets stored securely (no secrets in code)
+* Ready for GitHub Actions integration
+
 
 ---
 
 ## 📂 Project Structure
 
-EasyVault.krd/
+```
+EasyVault.KRD/
 ├── app/
-│ ├── config/
-│ ├── lib/
-│ ├── public/
-│ └── security/
+│   ├── config/
+│   ├── lib/
+│   ├── public/
+│   ├── security/
 ├── docker/
-│ ├── php/
-│ └── mysql/
-├── .github/workflows/
-│ └── cicd.yml
+│   ├── php/
+│   └── mysql/
 ├── docker-compose.yml
-├── .gitignore
+├── composer.json
+├── .env (not committed)
 └── README.md
-
-
-
----
-
-## 🔑 Core Features
-
-### Authentication & Accounts
-- Secure user registration with password hashing (bcrypt)
-- Email verification using one-time passwords (OTP)
-- Login restricted until account verification
-- Password reset with time-limited tokens
-- Secure session handling
-
-### Password Vault
-- Add, edit, and delete credentials
-- AES-GCM encryption for stored passwords
-- Decryption only occurs at runtime
-- Ownership enforced at database level
-
-### Admin Panel
-- Role-based access control (admin / user)
-- Enable or disable user accounts
-- Promote or demote users
-- Admin actions are fully logged
-- Admins cannot access user vault data
-
-### Audit Logging
-- Records administrative actions
-- Logs include:
-  - Action type
-  - Actor
-  - Target user
-  - IP address
-  - Timestamp
+```
 
 ---
 
-## 🔒 Security Practices Implemented
+## 🚀 Setup Instructions
 
-- Prepared SQL statements (SQL injection prevention)
-- Password hashing using bcrypt
-- AES-GCM encryption for sensitive data
-- Secure token generation and hashing
-- OTP expiration handling
-- Session regeneration on login
-- Access control guards for all protected routes
-- No plaintext secrets stored in the repository
+### Prerequisites
 
----
+* Docker & Docker Compose
+* Git
 
-## 🐳 Docker Setup
-
-The application runs using Docker Compose with separate containers for:
-- PHP + Apache
-- MySQL database
-
-### Run Locally with Docker
+### Local Setup
 
 ```bash
-docker compose up --build
+git clone https://github.com/your-repo/EasyVault.KRD.git
+cd EasyVault.KRD
+docker compose up -d --build
+```
 
-accessible at http://localhost:8080
- since hosted locally
+Access the application at:
+
+```
+http://localhost:8080
+```
+
+---
+
+
+
+
+
+---
+
+## 📜 License
+
+This project is for academic and educational purposes.
