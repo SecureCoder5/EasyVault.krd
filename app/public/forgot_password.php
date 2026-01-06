@@ -51,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 // Send email
-                sendMail(
-                    $email,
-                    'EasyVault Password Reset OTP',
-                    "Your EasyVault password reset code is:\n\n$otp\n\nThis code expires in 10 minutes."
-                );
+         //remove here     sendMail(
+        //            $email,
+          //          'EasyVault Password Reset OTP',
+            //        "Your EasyVault password reset code is:\n\n$otp\n\nThis code expires in 10 minutes."
+              // until here  );
 
                 $success = 'OTP sent to your email address.';
             }
