@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-footer">
             <a href="/signup.php">Create account</a>
             <span class="divider">|</span>
-            <a href="/forgot_password.php">Forgot password?</a>
+            
         </div>
 
     </div>
