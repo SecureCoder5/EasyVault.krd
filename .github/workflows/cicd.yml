@@ -40,6 +40,35 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
           | sudo sh -s -- -b /usr/local/bin
 
-      - name: Trivy image vulnerability scan
-        run: trivy image easyvault-krd:latest
+      # -------------------------------
+      # Trivy Scan (JSON Export)
+      # -------------------------------
+      - name: Trivy image vulnerability scan (JSON)
+        run: |
+          trivy image \
+            --format json \
+            --output trivy-report.json \
+            easyvault-krd:latest
         continue-on-error: true
+
+      # -------------------------------
+      # Trivy Scan (Human-readable)
+      # -------------------------------
+      - name: Trivy image vulnerability scan (Table)
+        run: |
+          trivy image \
+            --format table \
+            --output trivy-report.txt \
+            easyvault-krd:latest
+        continue-on-error: true
+
+      # -------------------------------
+      # Upload reports as artifacts
+      # -------------------------------
+      - name: Upload Trivy security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-security-reports
+          path: |
+            trivy-report.json
+            trivy-report.txt
