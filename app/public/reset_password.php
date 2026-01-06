@@ -1,65 +1,68 @@
 <?php
 declare(strict_types=1);
 
+session_start();
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../security/crypto.php';
 
 $error = '';
 $success = '';
 
+$emailPrefill = trim($_GET['email'] ?? '');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $otp      = trim($_POST['otp'] ?? '');
+
+    $email = trim($_POST['email'] ?? '');
+    $otp = trim($_POST['otp'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (!preg_match('/^[0-9]{6}$/', $otp)) {
-        $error = 'Invalid OTP format.';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters.';
+    if (!$email || !$otp || !$password) {
+        $error = 'All fields are required.';
     } else {
         try {
             $db = getDB();
 
-            // 1️⃣ Find valid OTP
             $stmt = $db->prepare(
-                'SELECT * FROM password_resets
-                 WHERE otp = :otp
-                   AND used = 0
-                   AND expires_at > NOW()
-                 LIMIT 1'
+                'SELECT id, reset_otp_hash, reset_otp_expires
+                 FROM users
+                 WHERE email = :email AND is_active = 1'
             );
-            $stmt->execute(['otp' => $otp]);
-            $reset = $stmt->fetch();
+            $stmt->execute(['email' => $email]);
+            $user = $stmt->fetch();
 
-            if (!$reset) {
+            if (
+                !$user ||
+                !$user['reset_otp_hash'] ||
+                strtotime($user['reset_otp_expires']) < time() ||
+                !password_verify($otp, $user['reset_otp_hash'])
+            ) {
                 $error = 'Invalid or expired OTP.';
             } else {
-                $userId = (int)$reset['user_id'];
 
-                // 2️⃣ Update password
+                // Update password
+                $newHash = hashPassword($password);
+
                 $stmt = $db->prepare(
-                    'UPDATE users SET password_hash = :hash WHERE id = :uid'
+                    'UPDATE users
+                     SET password_hash = :hash,
+                         reset_otp_hash = NULL,
+                         reset_otp_expires = NULL
+                     WHERE id = :id'
                 );
                 $stmt->execute([
-                    'hash' => hashPassword($password),
-                    'uid'  => $userId
+                    'hash' => $newHash,
+                    'id' => $user['id']
                 ]);
 
-                // 3️⃣ Mark OTP as used
-                $stmt = $db->prepare(
-                    'UPDATE password_resets SET used = 1 WHERE id = :id'
-                );
-                $stmt->execute(['id' => $reset['id']]);
-
-                $success = 'Your password has been reset successfully.';
+                $success = 'Password updated successfully. You may now log in.';
             }
         } catch (Throwable $e) {
-            error_log('Reset password error: ' . $e->getMessage());
             $error = 'Something went wrong. Please try again.';
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,59 +72,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-<div class="auth-container">
-    <div class="auth-card">
-        <div class="brand">
-            <h1>EasyVault.KRD 🔐</h1>
-            <p class="subtitle">Secure Password Vault · Kurdistan</p>
+<div class="page-center">
+
+    <div class="brand">
+        <h1>EasyVault.KRD 🔐</h1>
+        <p class="brand-sub">Secure Password Vault • Kurdistan</p>
+    </div>
+
+    <div class="card auth-card">
+
+        <div class="card-header">
+            <h2>Reset Password</h2>
+            <p>Enter OTP and new password</p>
         </div>
 
-        <h2>Reset Password</h2>
-        <p class="helper-text">
-            Enter the 6-digit code sent to your email and choose a new password.
-        </p>
+        <div class="card-body">
 
-        <?php if ($error): ?>
-            <div class="alert error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert error"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
 
-        <?php if ($success): ?>
-            <div class="alert success"><?= htmlspecialchars($success) ?></div>
-            <a href="/login.php" class="btn-primary" style="margin-top:15px;">
-                Go to Login
-            </a>
-        <?php else: ?>
-            <form method="POST" novalidate>
-                <label for="otp">OTP Code</label>
+            <?php if ($success): ?>
+                <div class="alert success">
+                    <?= htmlspecialchars($success) ?>
+                    <br><br>
+                    <a href="/login.php">Go to Login</a>
+                </div>
+            <?php endif; ?>
+
+            <form method="post" novalidate>
+
+                <label>Email</label>
                 <input
-                    type="text"
-                    id="otp"
-                    name="otp"
-                    maxlength="6"
-                    pattern="[0-9]{6}"
-                    placeholder="123456"
+                    type="email"
+                    name="email"
+                    value="<?= htmlspecialchars($emailPrefill) ?>"
                     required
                 >
 
-                <label for="password">New Password</label>
+                <label>OTP Code</label>
+                <input
+                    type="text"
+                    name="otp"
+                    required
+                    placeholder="6-digit code"
+                >
+
+                <label>New Password</label>
                 <input
                     type="password"
-                    id="password"
                     name="password"
                     required
-                    placeholder="At least 8 characters"
                 >
 
                 <button type="submit" class="btn-primary">
                     Reset Password
                 </button>
-            </form>
-        <?php endif; ?>
 
-        <div class="auth-footer">
-            <a href="/login.php">Back to login</a>
+            </form>
+
         </div>
+
     </div>
+
 </div>
 
 </body>
