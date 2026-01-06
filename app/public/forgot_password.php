@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } catch (Throwable $e) {
            
-            $error = 'DEBUG SMTP_HOST=' . ($_ENV['SMTP_HOST'] ?? 'NULL');
+            $error = 'error='
 
         }
     }
