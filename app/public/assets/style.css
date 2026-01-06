@@ -352,3 +352,29 @@ input {
     color: #ffffff;
 }
 
+/* Base button alignment fix */
+.btn,
+.btn-primary,
+.btn-outline-success {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 52px;              /* force same height */
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+/* Outline button for Security Tools */
+.btn-outline-success {
+    background: transparent;
+    color: #0f766e;
+    border: 2px solid #0f766e;
+}
+
+.btn-outline-success:hover {
+    background: #0f766e;
+    color: #ffffff;
+}
