@@ -20,44 +20,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $db = getDB();
 
-            // Check user exists & active
+            // Find active user (do NOT reveal existence)
             $stmt = $db->prepare(
-                'SELECT id FROM users WHERE email = :email AND is_active = 1'
+                'SELECT id FROM users WHERE email = :email AND is_active = 1 LIMIT 1'
             );
             $stmt->execute(['email' => $email]);
             $user = $stmt->fetch();
 
-            if (!$user) {
-                // Do NOT reveal existence
-                $success = 'If the email exists, an OTP has been sent.';
-            } else {
+            // Always show success message
+            $success = 'If the email exists, an OTP has been sent.';
 
+            if ($user) {
                 // Generate OTP
                 $otp = random_int(100000, 999999);
-                $otpHash = password_hash((string)$otp, PASSWORD_DEFAULT);
-                $expires = date('Y-m-d H:i:s', time() + 600); // 10 minutes
 
-                // Store OTP
+                // Hash OTP (never store raw)
+                $otpHash = password_hash((string)$otp, PASSWORD_DEFAULT);
+
+                // Expiry (10 minutes)
+                $expiresAt = date('Y-m-d H:i:s', time() + 600);
+
+                // Invalidate previous reset attempts
+                $db->prepare(
+                    'UPDATE password_resets
+                     SET used = 1
+                     WHERE user_id = :uid'
+                )->execute(['uid' => $user['id']]);
+
+                // Store new reset request
                 $stmt = $db->prepare(
-                    'UPDATE users
-                     SET reset_otp_hash = :hash,
-                         reset_otp_expires = :expires
-                     WHERE id = :id'
+                    'INSERT INTO password_resets
+                        (user_id, token_hash, otp, expires_at, used, created_at)
+                     VALUES
+                        (:uid, :token, :otp, :expires, 0, NOW())'
                 );
+
                 $stmt->execute([
-                    'hash'    => $otpHash,
-                    'expires' => $expires,
-                    'id'      => $user['id']
+                    'uid'     => $user['id'],
+                    'token'   => $otpHash,
+                    'otp'     => $otp,
+                    'expires' => $expiresAt
                 ]);
 
-                // Send email
-         //remove here     sendMail(
-        //            $email,
-          //          'EasyVault Password Reset OTP',
-            //        "Your EasyVault password reset code is:\n\n$otp\n\nThis code expires in 10 minutes."
-              // until here  );
-
-                $success = 'OTP sent to your email address.';
+                // Send OTP email
+                sendMail(
+                    $email,
+                    'EasyVault Password Reset Code',
+                    "
+                    <p>Your EasyVault password reset code is:</p>
+                    <h2>$otp</h2>
+                    <p>This code expires in 10 minutes.</p>
+                    "
+                );
             }
 
         } catch (Throwable $e) {
