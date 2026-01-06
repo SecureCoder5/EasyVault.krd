@@ -75,7 +75,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role'] = $user['role'];
             $_SESSION['user_verified'] = true;
 
-            header('Location: /dashboard.php');
+           if (($_SESSION['role'] ?? '') === 'admin') {
+    header('Location: admin_dashboard.php');
+} else {
+    header('Location: user_dashboard.php');
+}
+exit;
+
             exit;
         }
     }
