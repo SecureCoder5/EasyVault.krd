@@ -18,7 +18,6 @@ if (($_SESSION['role'] ?? '') === 'admin') {
 $emailResult = null;
 $emailError  = null;
 
-session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
 
@@ -119,9 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
             <ul>
                 <?php foreach ($emailResult as $breach): ?>
                     <li>
-                        <strong><?= htmlspecialchars($breach['Name']) ?></strong>
-                        (<?= $breach['BreachDate'] ?>)
-                    </li>
+    <strong><?= htmlspecialchars($breach['Name']) ?></strong>
+    <?php if (!empty($breach['BreachDate'])): ?>
+        (<?= htmlspecialchars($breach['BreachDate']) ?>)
+    <?php else: ?>
+        (Date not disclosed)
+    <?php endif; ?>
+</li>
+
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
