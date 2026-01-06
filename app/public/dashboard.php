@@ -77,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_email'])) {
 <h1>Welcome to EasyVault</h1>
     <nav style="margin-bottom: 20px;">
     <a href="/user_dashboard.php">🔐 My Vault</a> |
-    <a href="/add_vault.php">➕ Add Password</a> |
     <a href="/dashboard.php">🛡️ Security Tools</a> |
     <a href="/logout.php">🚪 Logout</a>
 </nav>
