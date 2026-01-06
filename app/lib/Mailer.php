@@ -6,32 +6,34 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-/**
- * Send email using PHPMailer + Gmail SMTP
- *
- * @param string $toEmail  Recipient email
- * @param string $subject  Email subject
- * @param string $htmlBody HTML body
- * @return bool
- */
-function sendMail(string $toEmail, string $subject, string $htmlBody): bool
+function sendMail(string $toEmail, string $subject, string $body, bool $isHtml = false): bool
 {
     $mail = new PHPMailer(true);
 
     try {
-        // SMTP configuration
+        // Validate ENV
+        $required = ['MAIL_HOST','MAIL_USERNAME','MAIL_PASSWORD','MAIL_FROM'];
+        foreach ($required as $key) {
+            if (empty($_ENV[$key])) {
+                throw new RuntimeException("Missing ENV: $key");
+            }
+        }
+
+        // SMTP
         $mail->isSMTP();
-        $mail->Host       = $_ENV['MAIL_HOST'] ?? 'smtp.gmail.com';
+        $mail->Host       = $_ENV['MAIL_HOST'];
         $mail->SMTPAuth   = true;
         $mail->Username   = $_ENV['MAIL_USERNAME'];
         $mail->Password   = $_ENV['MAIL_PASSWORD'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = (int)($_ENV['MAIL_PORT'] ?? 587);
 
-        // Security & reliability
+        // Encryption
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+
+        // Reliability
         $mail->SMTPDebug  = 0;
-        $mail->CharSet    = 'UTF-8';
         $mail->Timeout    = 10;
+        $mail->CharSet    = 'UTF-8';
 
         // Sender
         $mail->setFrom(
@@ -43,16 +45,16 @@ function sendMail(string $toEmail, string $subject, string $htmlBody): bool
         $mail->addAddress($toEmail);
 
         // Content
-        $mail->isHTML(true);
+        $mail->isHTML($isHtml);
         $mail->Subject = $subject;
-        $mail->Body    = $htmlBody;
-        $mail->AltBody = strip_tags($htmlBody);
+        $mail->Body    = $body;
+        $mail->AltBody = strip_tags($body);
 
         $mail->send();
         return true;
 
-    } catch (Exception $e) {
-        error_log('[MAIL ERROR] ' . $mail->ErrorInfo);
+    } catch (Throwable $e) {
+        error_log('[MAIL ERROR] ' . $e->getMessage());
         return false;
     }
 }
