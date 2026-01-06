@@ -33,12 +33,12 @@ jobs:
         continue-on-error: true
 
       - name: Build Docker image
-  run: docker build -t easyvault-krd:latest .
-
+        run: docker build -t easyvault-krd:latest .
 
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sudo sh -s -- -b /usr/local/bin
 
       - name: Trivy image vulnerability scan
         run: trivy image easyvault-krd:latest
