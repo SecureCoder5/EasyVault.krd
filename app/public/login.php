@@ -14,15 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (!$email || !$password) {
+    if ($email === '' || $password === '') {
         $error = 'Invalid credentials';
     } else {
         $db = getDB();
 
+        // 🔐 AUTHENTICATION MUST BE ROLE-AGNOSTIC
         $stmt = $db->prepare(
             'SELECT id, password_hash, role, is_verified, is_active
              FROM users
-             WHERE email = :email'
+             WHERE email = :email
+             LIMIT 1'
         );
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
@@ -32,18 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             !verifyPassword($password, $user['password_hash'])
         ) {
             $error = 'Invalid credentials';
+
         } elseif ((int)$user['is_active'] !== 1) {
             $error = 'Account disabled';
+
         } elseif ((int)$user['is_verified'] !== 1) {
             $error = 'Please verify your email first.';
             $showVerifyLink = true;
+
         } else {
 
-            /**
-             * --------------------------------
-             * SESSION + VAULT KEY DERIVATION
-             * --------------------------------
-             */
+            /* -------------------------------
+               SESSION + VAULT KEY DERIVATION
+            -------------------------------- */
 
             session_regenerate_id(true);
 
@@ -56,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             /**
              * Derive vault key using:
-             * - User password (secret)
-             * - APP_KEY (application secret)
+             * - User password
+             * - APP_KEY
              * - PBKDF2 SHA-256 (100k rounds)
              * - 32 bytes output (AES-256)
              */
@@ -75,13 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role'] = $user['role'];
             $_SESSION['user_verified'] = true;
 
-           if (($_SESSION['role'] ?? '') === 'admin') {
-    header('Location: admin_dashboard.php');
-} else {
-    header('Location: user_dashboard.php');
-}
-exit;
-
+            // ✅ AUTHORIZATION HAPPENS AFTER LOGIN
+            if ($user['role'] === 'admin') {
+                header('Location: /admin_dashboard.php');
+            } else {
+                header('Location: /user_dashboard.php');
+            }
             exit;
         }
     }
