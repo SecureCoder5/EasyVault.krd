@@ -55,7 +55,7 @@ $items = $stmt->fetchAll();
 
             <!-- Action buttons -->
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <a href="add_vault.php" class="btn btn-primary" style="flex:1;">
+                <a href="vault_add.php" class="btn btn-primary" style="flex:1;">
                     ➕ Add New Credential
                 </a>
 
