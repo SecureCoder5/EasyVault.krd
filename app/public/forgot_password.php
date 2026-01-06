@@ -60,7 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'OTP sent to your email address.';
             }
         } catch (Throwable $e) {
-            $error = 'Something went wrong. Please try again later.';
+           
+            $error = 'DEBUG SMTP_HOST=' . ($_ENV['SMTP_HOST'] ?? 'NULL');
+
         }
     }
 }
