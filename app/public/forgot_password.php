@@ -60,8 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'OTP sent to your email address.';
             }
         } catch (Throwable $e) {
-           
-            $error = 'error='
+          
+    error_log('[FORGOT PASSWORD ERROR] ' . $e->getMessage());
+    $error = 'Something went wrong. Please try again later.';
+}
 
         }
     }
