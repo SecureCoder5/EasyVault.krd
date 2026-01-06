@@ -33,7 +33,8 @@ jobs:
         continue-on-error: true
 
       - name: Build Docker image
-        run: docker build -t easyvault-krd:latest -f docker/php/Dockerfile .
+  run: docker build -t easyvault-krd:latest .
+
 
       - name: Install Trivy
         run: |
