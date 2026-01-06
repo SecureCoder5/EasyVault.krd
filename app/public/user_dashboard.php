@@ -29,7 +29,7 @@ $items = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <title>User Dashboard – EasyVault</title>
-    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
@@ -53,19 +53,16 @@ $items = $stmt->fetchAll();
 
         <div class="card-body">
 
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <a href="add_vault.php" class="btn btn-primary" style="flex: 1;">
-            ➕ Add New Credential
-        </a>
+            <!-- Action buttons -->
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <a href="add_vault.php" class="btn btn-primary" style="flex:1;">
+                    ➕ Add New Credential
+                </a>
 
-        <a href="dashboard.php" class="btn btn-secondary" style="flex: 1;">
-            🛡️ Security Tools
-        </a>
-    </div>
-
-</div>
-
-            </p>
+                <a href="dashboard.php" class="btn btn-secondary" style="flex:1;">
+                    🛡️ Security Tools
+                </a>
+            </div>
 
             <?php if (empty($items)): ?>
                 <p style="font-style:italic; color:#64748b;">
@@ -96,10 +93,12 @@ $items = $stmt->fetchAll();
                             <td><strong><?= htmlspecialchars($item['service']) ?></strong></td>
                             <td><?= htmlspecialchars($item['vault_username']) ?></td>
                             <td style="max-width:220px;">
-                                <input type="password"
-                                       value="<?= htmlspecialchars($decryptedPassword) ?>"
-                                       readonly
-                                       style="width:100%; padding:8px; font-size:0.85rem;">
+                                <input
+                                    type="password"
+                                    value="<?= htmlspecialchars($decryptedPassword) ?>"
+                                    readonly
+                                    style="width:100%; padding:8px; font-size:0.85rem;"
+                                >
                                 <button
                                     type="button"
                                     class="secondary"
@@ -112,12 +111,13 @@ $items = $stmt->fetchAll();
                                 </button>
                             </td>
                             <td style="white-space:nowrap;">
-                                <a href="/vault_edit.php?id=<?= (int)$item['id'] ?>">✏️ Edit</a>
+                                <a href="vault_edit.php?id=<?= (int)$item['id'] ?>">✏️ Edit</a>
 
-                                <form method="post"
-                                      action="/vault_delete.php"
-                                      style="display:inline"
-                                      onsubmit="return confirm('Are you sure you want to delete this credential?');">
+                                <form
+                                    method="post"
+                                    action="vault_delete.php"
+                                    style="display:inline"
+                                    onsubmit="return confirm('Are you sure you want to delete this credential?');">
                                     <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                                     <button type="submit" class="danger" style="margin-left:8px;">
                                         ❌ Delete
@@ -135,7 +135,7 @@ $items = $stmt->fetchAll();
         </div>
 
         <div class="card-footer logout">
-            <form method="post" action="/logout.php">
+            <form method="post" action="logout.php">
                 <button type="submit" class="secondary">
                     Logout
                 </button>
