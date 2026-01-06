@@ -53,15 +53,16 @@ $items = $stmt->fetchAll();
 
         <div class="card-body">
 
-            <p style="margin-bottom:15px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-    <a href="/add_vault.php" class="btn btn-primary">
-        ➕ Add New Credential
-    </a>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <a href="add_vault.php" class="btn btn-primary" style="flex: 1;">
+            ➕ Add New Credential
+        </a>
 
-    <a href="/dashboard.php" class="btn btn-secondary">
-        🛡️ Security Tools
-    </a>
+        <a href="dashboard.php" class="btn btn-secondary" style="flex: 1;">
+            🛡️ Security Tools
+        </a>
+    </div>
+
 </div>
 
             </p>
