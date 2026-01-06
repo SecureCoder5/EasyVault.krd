@@ -55,14 +55,15 @@ $items = $stmt->fetchAll();
 
             <!-- Action buttons -->
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <a href="vault_add.php" class="btn btn-primary" style="flex:1;">
-                    ➕ Add New Credential
-                </a>
+    <a href="vault_add.php" class="btn btn-primary" style="flex:1;">
+        ➕ Add New Credential
+    </a>
 
-                <a href="dashboard.php" class="btn btn-secondary" style="flex:1;">
-                    🛡️ Security Tools
-                </a>
-            </div>
+    <a href="dashboard.php" class="btn-outline-success" style="flex:1;">
+        🛡️ Security Tools
+    </a>
+</div>
+
 
             <?php if (empty($items)): ?>
                 <p style="font-style:italic; color:#64748b;">
