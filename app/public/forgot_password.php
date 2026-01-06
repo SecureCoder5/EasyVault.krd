@@ -63,15 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 // Send OTP email
-                sendMail(
-                    $email,
-                    'EasyVault Password Reset Code',
-                    "
-                    <p>Your EasyVault password reset code is:</p>
-                    <h2>$otp</h2>
-                    <p>This code expires in 10 minutes.</p>
-                    "
-                );
+                $emailBody = "
+<h2>EasyVault Password Reset</h2>
+<p>Your one-time password reset code is:</p>
+<h1 style='letter-spacing:3px;'>$otp</h1>
+<p>This code expires in <strong>10 minutes</strong>.</p>
+<p>If you did not request this, you can ignore this email.</p>
+";
+
+if (!sendMail($email, 'EasyVault Password Reset OTP', $emailBody, true)) {
+    throw new RuntimeException('Failed to send OTP email');
+}
+;
             }
 
         } catch (Throwable $e) {
